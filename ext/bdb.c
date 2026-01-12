@@ -1230,17 +1230,41 @@ void assoc_key(DBT* result, VALUE obj) {
   result->data  = str;
 }
 
-VALUE assoc_call(VALUE *args)
-{
-  return rb_funcall(args[0],fv_call,3,args[1],args[2],args[3]);
-}
+// VALUE assoc_call(VALUE *args)
+// {
+//   return rb_funcall(args[0],fv_call,3,args[1],args[2],args[3]);
+// }
 
-VALUE assoc_rescue(VALUE *error, VALUE e)
+// VALUE assoc_rescue(VALUE *error, VALUE e)
+// {
+//   VALUE message = StringValue(e);
+//   rb_warn(RSTRING_PTR(message));
+//   *error = e;
+// 	return Qnil;
+// }
+
+static VALUE assoc_call(VALUE arg)
 {
-  VALUE message = StringValue(e);
-  rb_warn(RSTRING_PTR(message));
-  *error = e;
-	return Qnil;
+    VALUE *args = (VALUE *)arg;
+
+    return rb_funcall(
+        args[0],   /* receiver */
+        fv_call,
+        3,
+        args[1],
+        args[2],
+        args[3]
+    );
+}
+static VALUE assoc_rescue(VALUE arg, VALUE e)
+{
+    VALUE *error = (VALUE *)arg;
+
+    VALUE message = rb_obj_as_string(e);
+    rb_warn("%s", StringValueCStr(message));
+
+    *error = e;
+    return Qnil;
 }
 
 int assoc_callback(DB *secdb, const DBT* pkey, const DBT* data, DBT* skey)
@@ -1265,12 +1289,27 @@ int assoc_callback(DB *secdb, const DBT* pkey, const DBT* data, DBT* skey)
   fprintf(stderr,"assoc_data %*s", data->size, data->data);
 #endif
 
-  retv=rb_rescue(
-    (VALUE(*)_((VALUE)))assoc_call,
+  // retv=rb_rescue(
+  //   (VALUE(*)_((VALUE)))assoc_call,
+  //   (VALUE)args,
+  //   (VALUE(*)_((VALUE)))assoc_rescue,
+  //   (VALUE)&error
+  // );
+VALUE error = Qnil;
+VALUE args[4];
+
+args[0] = receiver;
+args[1] = arg1;
+args[2] = arg2;
+args[3] = arg3;
+
+retv = rb_rescue(
+    assoc_call,
     (VALUE)args,
-    (VALUE(*)_((VALUE)))assoc_rescue,
+    assoc_rescue,
     (VALUE)&error
-  );
+);
+
 
   if (!NIL_P(error)) return 99999;
   if (NIL_P(retv))
