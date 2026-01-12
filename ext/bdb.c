@@ -1265,8 +1265,13 @@ int assoc_callback(DB *secdb, const DBT* pkey, const DBT* data, DBT* skey)
   fprintf(stderr,"assoc_data %*s", data->size, data->data);
 #endif
 
-  retv=rb_rescue((VALUE(*)_((VALUE)))assoc_call,(VALUE)args,(VALUE(*)_((VALUE)))assoc_rescue,(VALUE)&error);
-  
+  retv=rb_rescue(
+    (VALUE(*)_((VALUE)))assoc_call,
+    (VALUE)args,
+    (VALUE(*)_((VALUE)))assoc_rescue,
+    (VALUE)&error
+  );
+
   if (!NIL_P(error)) return 99999;
   if (NIL_P(retv))
     return DB_DONOTINDEX;
